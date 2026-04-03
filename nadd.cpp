@@ -1,62 +1,61 @@
 #include <iostream>
-#include <chrono>
 #include <cstdlib>
 #include <ctime>
-#include<algorithm>
+
 using namespace std;
 
-//平凡算法（链式累加）
-long long naive_sum(const int* arr, int n) {
+long long flat_sum(int* a, int n) {
     long long sum = 0;
     for (int i = 0; i < n; ++i)
-        sum += arr[i];
+        sum += a[i];
     return sum;
 }
 
-//两路链式累加
-long long two_way_sum(const int* arr, int n) {
+long long two_way_sum(int* a, int n) {
     long long sum1 = 0, sum2 = 0;
     for (int i = 0; i < n; i += 2) {
-        sum1 += arr[i];
-        sum2 += arr[i + 1];
+        sum1 += a[i];
+        sum2 += a[i + 1];
     }
     return sum1 + sum2;
 }
 
-//递归归并
-long long recursive_sum(int* arr, int n) {
-    for (int m = n; m > 1; m /= 2)
-        for (int i = 0; i < m / 2; ++i)
+// 原地递归归并
+long long guibing_sum(int* arr, int n) {
+    //原地归并，两两相加，结果存在数组前面
+    for (int m = n; m > 1; m /= 2) {
+        for (int i = 0; i < m / 2; ++i) {
             arr[i] = arr[2 * i] + arr[2 * i + 1];
-    return arr[0];
+        }
+    }
+    return arr[0];  // 最终和（仍在 int 范围内）
+}
+
+double measure(long long (*func)(int*, int), int* arr, int n, const char* name) {
+    clock_t start = clock();
+    long long result = func(arr, n);
+    clock_t end = clock();
+    double ms = (double)(end - start) / CLOCKS_PER_SEC * 1000.0;
+    cout << name << " : " << ms << " ms, 结果 = " << result << endl;
+    return ms;
 }
 
 int main() {
-    const int n = 1 << 20;   //2^20
+    const int n = 1 << 20;   //1左移20位,也就是2^20
     int* data = new int[n];
-    srand(time(nullptr));
+
+    // 使用固定小值：a[i] = i % 100（保证总和不超过 int 范围）
     for (int i = 0; i < n; ++i)
-        data[i] = rand() % 100;
+        data[i] = i % 100;
 
-    // 计时辅助 lambda（直接输出毫秒）
-    auto measure = [&](auto func, const char* name) {
-        auto start = chrono::high_resolution_clock::now();
-        volatile long long result = func();   // volatile 防止被优化
-        auto end = chrono::high_resolution_clock::now();
-        double ms = chrono::duration<double, milli>(end - start).count();
-        cout << name << " : " << ms << " ms, 结果 = " << result << endl;
-    };
+    measure(flat_sum, data, n, "平凡算法");
+    measure(two_way_sum, data, n, "两路链式");
 
-    // 测试平凡算法
-    measure([&]() { return naive_sum(data, n); }, "平凡算法");
-
-    // 测试两路链式
-    measure([&]() { return two_way_sum(data, n); }, "两路链式");
-
-    // 测试递归归并（需要拷贝原数组，因为会修改）
+    // 递归归并需要拷贝，因为会原地修改数组
     int* copy = new int[n];
-    std::copy(data, data + n, copy);
-    measure([&]() { return recursive_sum(copy, n); }, "递归归并");
+    for (int i = 0; i < n; ++i)
+        copy[i] = data[i];
+    measure(guibing_sum, copy, n, "递归归并");
     delete[] copy;
 
     delete[] data;
