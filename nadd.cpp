@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const int REPEAT = 10; //测量次数
+const int REPEAT = 100; //测量次数
 
 long long flat_sum(int* a, int n) {
     long long sum = 0;
