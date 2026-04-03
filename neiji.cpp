@@ -1,65 +1,74 @@
 #include <iostream>
-//计时库
-#include <chrono>
-using namespace std;
-using namespace chrono;
+#include <cstdlib>
+#include <ctime>
 
-//矩阵大小n
-const int n = 2048;
+using namespace std;
+
+const int n = 2048;   //矩阵大小
+
+//平凡算法：列优先访问,内层循环行索引变化，步长大，缓存不友好
+void plain_algorithm(double* B, double* a, double* sum, int n) {
+    
+    for (int i = 0; i < n; ++i)
+        sum[i] = 0.0;
+    //列优先计算
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            sum[i] += B[j * n + i] * a[j];
+        }
+    }
+}
+
+//优化算法：行优先访问,内层循环列索引连续
+void optimized_algorithm(double* B, double* a, double* sum, int n) {
+    
+    for (int i = 0; i < n; ++i)
+        sum[i] = 0.0;
+    //行优先计算
+    for (int j = 0; j < n; ++j) {
+        double aj = a[j];
+        double* row = B + j * n;   //第 j 行的起始地址
+        for (int i = 0; i < n; ++i) {
+            sum[i] += row[i] * aj;
+        }
+    }
+}
 
 int main() {
     
-   
-    double** B = new double*[n];
+    double* B = new double[n * n];
     double* a = new double[n];
-    
     double* sum = new double[n];
 
     
-    for (int j = 0; j < n; j++) {
-        B[j] = new double[n];
-        for (int i = 0; i < n; i++) {
-            B[j][i] = i + j;  //固定值
+    for (int j = 0; j < n; ++j) {
+        for (int i = 0; i < n; ++i) {
+            B[j * n + i] = i + j;   
         }
-        a[j] = j;  //赋值
+        a[j] = j;
     }
 
-   
-    auto start1 = high_resolution_clock::now(); //计时开始
-    for (int i = 0; i < n; i++) {
-        sum[i] = 0.0;
-        for (int j = 0; j < n; j++) {
-            sum[i] += B[j][i] * a[j]; 
-        }
-    }
-    auto end1 = high_resolution_clock::now();   //计时结束
-    auto time1 = duration_cast<microseconds>(end1 - start1).count();
+    //平凡算法
+    clock_t start1 = clock();
+    plain_algorithm(B, a, sum, n);
+    clock_t end1 = clock();
+    double ms1 = (double)(end1 - start1) / CLOCKS_PER_SEC * 1000.0;
+    cout << "平凡算法（列优先） : " << ms1 << " ms, 前5个结果 = ";
+    for (int i = 0; i < 5; ++i)
+        cout << sum[i] << " ";
+    cout << endl;
 
-    //验证正确
-    cout << "=== 平凡算法运行时间：" << time1 << " 微秒 ===" << endl;
-    cout << "前5个计算结果：";
-    for (int i = 0; i < 5; i++) cout << sum[i] << " ";
-    cout << endl << endl;
+    //优化算法
+    clock_t start2 = clock();
+    optimized_algorithm(B, a, sum, n);
+    clock_t end2 = clock();
+    double ms2 = (double)(end2 - start2) / CLOCKS_PER_SEC * 1000.0;
+    cout << "优化算法（行优先） : " << ms2 << " ms, 前5个结果 = ";
+    for (int i = 0; i < 5; ++i)
+        cout << sum[i] << " ";
+    cout << endl;
 
-    //优化算法：逐行计算内积
-    auto start2 = high_resolution_clock::now(); //计时开始
-    //初始化sum为0
-    for (int i = 0; i < n; i++) sum[i] = 0.0;
-    for (int j = 0; j < n; j++) {
-        for (int i = 0; i < n; i++) {
-            sum[i] += B[j][i] * a[j]; 
-        }
-    }
-    auto end2 = high_resolution_clock::now();   //计时结束
-    auto time2 = duration_cast<microseconds>(end2 - start2).count();
-
-   
-    cout << "=== 优化算法运行时间：" << time2 << " 微秒 ===" << endl;
-    cout << "前5个计算结果：";
-    for (int i = 0; i < 5; i++) cout << sum[i] << " ";
-    cout << endl << endl;
-
-    for (int j = 0; j < n; j++) delete[] B[j];
+    
     delete[] B;
     delete[] a;
     delete[] sum;
