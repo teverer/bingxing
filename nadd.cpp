@@ -20,7 +20,7 @@ long long two_way_sum(int* a, int n) {
     return sum1 + sum2;
 }
 
-// 原地递归归并
+//原地递归归并
 long long guibing_sum(int* arr, int n) {
     //原地归并，两两相加，结果存在数组前面
     for (int m = n; m > 1; m /= 2) {
@@ -28,7 +28,7 @@ long long guibing_sum(int* arr, int n) {
             arr[i] = arr[2 * i] + arr[2 * i + 1];
         }
     }
-    return arr[0];  // 最终和（仍在 int 范围内）
+    return arr[0];  
 }
 
 double measure(long long (*func)(int*, int), int* arr, int n, const char* name) {
@@ -44,14 +44,14 @@ int main() {
     const int n = 1 << 20;   //1左移20位,也就是2^20
     int* data = new int[n];
 
-    // 使用固定小值：a[i] = i % 100（保证总和不超过 int 范围）
+    
     for (int i = 0; i < n; ++i)
-        data[i] = i % 100;
+        data[i] = i % 100;//取模100而不是i本身,i本身会导致了归并算法溢出
 
     measure(flat_sum, data, n, "平凡算法");
     measure(two_way_sum, data, n, "两路链式");
 
-    // 递归归并需要拷贝，因为会原地修改数组
+    //递归归并需要拷贝，因为会原地修改数组
     int* copy = new int[n];
     for (int i = 0; i < n; ++i)
         copy[i] = data[i];
